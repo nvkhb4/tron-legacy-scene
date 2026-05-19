@@ -1,0 +1,20 @@
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node (if you add npm deps later)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build & Cache
+dist/
+build/
+*.log
