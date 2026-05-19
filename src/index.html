@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tron Legacy</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; overflow: hidden; font-family: monospace; }
+    canvas { display: block; width: 100vw; height: 100vh; }
+    #hud {
+      position: absolute; top: 16px; left: 16px;
+      color: #5e62ab; font-size: 12px; line-height: 1.8;
+      text-shadow: 0 0 8px #9c96bb;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="glCanvas"></canvas>
+  <div id="hud">
+    TRON CITY — WEEK 1 STARTER<br>
+    W / S — move forward / back<br>
+    A / D — strafe left / right<br>
+    Mouse drag — look around<br>
+    <br>
+    <span id="pos"></span>
+  </div>
+  <script type="module" src="main.js"></script>
+</body>
+</html>
