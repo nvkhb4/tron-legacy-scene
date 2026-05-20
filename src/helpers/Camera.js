@@ -4,7 +4,7 @@ import M from './Math.js';
 
 export class FlyCamera {
   constructor() {
-    this.pos = [0, 2, 10];
+    this.pos = [0, 3, 28];
     this.yaw = -Math.PI / 2;   // looking toward -Z
     this.pitch = 0.0;
     this.speed = 8;

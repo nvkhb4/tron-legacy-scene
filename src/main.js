@@ -25,17 +25,23 @@ const DARK_GREY  = [0.05, 0.05, 0.07];
 
 //city buildings: (x, z, width, height, depth) 
 const BUILDINGS = [
-  [-8,  -8,  2, 6,  2],
-  [-8,   8,  2, 10, 2],
-  [ 8,  -8,  2, 8,  2],
-  [ 8,   8,  2, 14, 2],
-  [-4,  -12, 3, 5,  3],
-  [ 4,  -12, 2, 9,  2],
-  [-12,  0,  2, 12, 2],
-  [ 12,  0,  2, 7,  2],
-  [ 0,  -15, 4, 4,  4],
-  [-6,   14, 2, 11, 2],
-  [ 6,   14, 3, 6,  3],
+  // Left row (x = -10)
+  [-10, -20, 5, 14, 5],
+  [-10,  -8, 4,  8, 4],
+  [-10,   4, 6, 18, 5],
+  [-10,  16, 5, 10, 4],
+
+  // Right row (x = +10)
+  [ 10, -18, 5, 10, 5],
+  [ 10,  -6, 6, 16, 5],
+  [ 10,   6, 4,  8, 4],
+  [ 10,  18, 5, 20, 5],
+
+  // Background — far left/right, taller
+  [-18, -10, 6, 22, 6],
+  [ 18,   5, 6, 18, 6],
+  [-18,  12, 5, 14, 5],
+  [ 18, -15, 5, 25, 5],
 ];
 
 //main initialization 
@@ -69,10 +75,10 @@ async function main() {
 
   // Multiple neon point lights scattered around the city
   const LIGHTS = [
-  { pos: [ 0,  4,  0],  color: [0.0, 1.0, 0.85] },
-  { pos: [-8,  4, -5],  color: [0.1, 0.4, 1.0]  },
-  { pos: [ 8,  4,  5],  color: [0.0, 0.9, 0.6]  },
-  { pos: [ 0,  4, -12], color: [0.2, 0.6, 1.0]  },
+  { pos: [  0, 5,  10], color: [0.0, 1.0, 0.85] },  // cyan  — near
+  { pos: [ -5, 4,   0], color: [0.1, 0.4, 1.0]  },  // blue  — left mid
+  { pos: [  5, 4, -10], color: [0.0, 0.9, 0.6]  },  // teal  — right mid
+  { pos: [  0, 5, -20], color: [0.2, 0.6, 1.0]  },  // blue  — far
   ];
 
   let last = 0;
