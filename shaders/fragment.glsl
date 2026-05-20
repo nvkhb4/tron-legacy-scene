@@ -14,46 +14,59 @@ uniform vec3  uSpecularColor;
 uniform float uShininess;
 uniform float uEmissiveStrength;
 
-// NEW — texture toggle
+// Texture
 uniform sampler2D uDiffuseTex;
 uniform bool      uUseTexture;
-uniform float     uTexScale;    // how many times to tile the grid
+uniform float     uTexScale;
 
-// Point light
-uniform vec3  uLightPos;
-uniform vec3  uLightColor;
+// Multiple point lights
+#define NUM_LIGHTS 4
+
+uniform vec3  uLightPos[NUM_LIGHTS];
+uniform vec3  uLightColor[NUM_LIGHTS];
 uniform float uLightConstant;
 uniform float uLightLinear;
 uniform float uLightQuadratic;
 
 out vec4 fragColor;
 
-void main() {
-  vec3 norm     = normalize(vNormal);
-  vec3 lightDir = normalize(uLightPos - vFragPos);
-  vec3 viewDir  = normalize(uCameraPos - vFragPos);
-  vec3 halfDir  = normalize(lightDir + viewDir);
-
-  float dist        = length(uLightPos - vFragPos);
+vec3 calcPointLight(vec3 lightPos, vec3 lightColor, vec3 norm, vec3 viewDir, vec3 diffuseColor, vec3 specColor) {
+  vec3  lightDir    = normalize(lightPos - vFragPos);
+  vec3  halfDir     = normalize(lightDir + viewDir);
+  float dist        = length(lightPos - vFragPos);
   float attenuation = 1.0 / (uLightConstant + uLightLinear * dist + uLightQuadratic * dist * dist);
 
-  // Sample texture or fall back to uDiffuseColor
+  float diff    = max(dot(norm, lightDir), 0.0);
+  vec3  diffuse = diff * diffuseColor * lightColor * attenuation;
+
+  float spec    = pow(max(dot(norm, halfDir), 0.0), uShininess);
+  vec3  specular = spec * specColor * lightColor * attenuation;
+
+  return diffuse + specular;
+}
+
+void main() {
+  vec3 norm    = normalize(vNormal);
+  vec3 viewDir = normalize(uCameraPos - vFragPos);
+
   vec3 baseDiffuse = uDiffuseColor;
   vec3 baseAmbient = uAmbientColor;
   if (uUseTexture) {
     vec3 texColor = texture(uDiffuseTex, vTexCoord * uTexScale).rgb;
     baseDiffuse   = texColor;
-    baseAmbient   = texColor * 0.4;  // ambient tinted by texture
+    baseAmbient   = texColor * 0.4;
   }
 
-  vec3 ambient  = baseAmbient * uLightColor * 0.05;
-  float diff    = max(dot(norm, lightDir), 0.0);
-  vec3 diffuse  = diff * baseDiffuse * uLightColor * attenuation;
-  float spec    = pow(max(dot(norm, halfDir), 0.0), uShininess);
-  vec3 specular = spec * uSpecularColor * uLightColor * attenuation;
+  // Weak global ambient so nothing is pure black
+  vec3 result = baseAmbient * 0.03;
 
-  vec3 emissive = uAmbientColor * uEmissiveStrength;
+  // Sum all light contributions
+  for (int i = 0; i < NUM_LIGHTS; i++) {
+    result += calcPointLight(uLightPos[i], uLightColor[i], norm, viewDir, baseDiffuse, uSpecularColor);
+  }
 
-  vec3 result = ambient + diffuse + specular + emissive;
-  fragColor   = vec4(result, 1.0);
+  // Emissive
+  result += uAmbientColor * uEmissiveStrength;
+
+  fragColor = vec4(result, 1.0);
 }

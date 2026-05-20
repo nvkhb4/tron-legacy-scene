@@ -65,7 +65,15 @@ async function main() {
   camera.attachMouseLook(canvas);
 
   //single neon point light
-  const light = { pos: [0, 8, 0], color: TRON_CYAN };
+  //const light = { pos: [0, 8, 0], color: TRON_CYAN };
+
+  // Multiple neon point lights scattered around the city
+  const LIGHTS = [
+  { pos: [ 0,  4,  0],  color: [0.0, 1.0, 0.85] },
+  { pos: [-8,  4, -5],  color: [0.1, 0.4, 1.0]  },
+  { pos: [ 8,  4,  5],  color: [0.0, 0.9, 0.6]  },
+  { pos: [ 0,  4, -12], color: [0.2, 0.6, 1.0]  },
+  ];
 
   let last = 0;
   const posHUD = document.getElementById('pos');
@@ -89,12 +97,14 @@ async function main() {
     um4(gl, prog, 'uView', view);
     u3f(gl, prog, 'uCameraPos', ...camera.pos);
 
-    //light uniforms
-    u3f(gl, prog, 'uLightPos',   ...light.pos);
-    u3f(gl, prog, 'uLightColor', ...light.color);
+    // Upload all lights as arrays
+    for (let i = 0; i < LIGHTS.length; i++) {
+      gl.uniform3fv(gl.getUniformLocation(prog, `uLightPos[${i}]`),   LIGHTS[i].pos);
+      gl.uniform3fv(gl.getUniformLocation(prog, `uLightColor[${i}]`), LIGHTS[i].color);
+    }
     u1f(gl, prog, 'uLightConstant',  1.0);
-    u1f(gl, prog, 'uLightLinear',    0.07);
-    u1f(gl, prog, 'uLightQuadratic', 0.017);
+    u1f(gl, prog, 'uLightLinear',    0.027);
+    u1f(gl, prog, 'uLightQuadratic', 0.0028);
 
     //draw ground plane
     {
@@ -130,10 +140,10 @@ async function main() {
       um4(gl, prog, 'uModel', model);
       um3(gl, prog, 'uNormalMatrix', M.normalMatrix(model));
       u3f(gl, prog, 'uAmbientColor',  ...TRON_CYAN);
-      u3f(gl, prog, 'uDiffuseColor',  0.02, 0.04, 0.05);
+      u3f(gl, prog, 'uDiffuseColor',  0.0, 0.15, 0.15);
       u3f(gl, prog, 'uSpecularColor', 0.2, 0.8, 0.8);
       u1f(gl, prog, 'uShininess', 64.0);
-      u1f(gl, prog, 'uEmissiveStrength', 0.08);
+      u1f(gl, prog, 'uEmissiveStrength', 0.3);
       gl.bindVertexArray(boxMesh.vao);
       gl.drawElements(gl.TRIANGLES, boxMesh.count, gl.UNSIGNED_SHORT, 0);
     }
