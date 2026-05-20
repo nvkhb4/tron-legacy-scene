@@ -12,9 +12,14 @@ uniform vec3  uAmbientColor;
 uniform vec3  uDiffuseColor;
 uniform vec3  uSpecularColor;
 uniform float uShininess;
-uniform float uEmissiveStrength;   // >0 for glowing neon edges
+uniform float uEmissiveStrength;
 
-// Point light (one for now, expand later)
+// NEW — texture toggle
+uniform sampler2D uDiffuseTex;
+uniform bool      uUseTexture;
+uniform float     uTexScale;    // how many times to tile the grid
+
+// Point light
 uniform vec3  uLightPos;
 uniform vec3  uLightColor;
 uniform float uLightConstant;
@@ -29,18 +34,24 @@ void main() {
   vec3 viewDir  = normalize(uCameraPos - vFragPos);
   vec3 halfDir  = normalize(lightDir + viewDir);
 
-  // Attenuation
   float dist        = length(uLightPos - vFragPos);
   float attenuation = 1.0 / (uLightConstant + uLightLinear * dist + uLightQuadratic * dist * dist);
 
-  // Phong components
-  vec3 ambient  = uAmbientColor * uLightColor * 0.05;
+  // Sample texture or fall back to uDiffuseColor
+  vec3 baseDiffuse = uDiffuseColor;
+  vec3 baseAmbient = uAmbientColor;
+  if (uUseTexture) {
+    vec3 texColor = texture(uDiffuseTex, vTexCoord * uTexScale).rgb;
+    baseDiffuse   = texColor;
+    baseAmbient   = texColor * 0.4;  // ambient tinted by texture
+  }
+
+  vec3 ambient  = baseAmbient * uLightColor * 0.05;
   float diff    = max(dot(norm, lightDir), 0.0);
-  vec3 diffuse  = diff * uDiffuseColor * uLightColor * attenuation;
+  vec3 diffuse  = diff * baseDiffuse * uLightColor * attenuation;
   float spec    = pow(max(dot(norm, halfDir), 0.0), uShininess);
   vec3 specular = spec * uSpecularColor * uLightColor * attenuation;
 
-  // Emissive — neon glow surfaces emit their own color
   vec3 emissive = uAmbientColor * uEmissiveStrength;
 
   vec3 result = ambient + diffuse + specular + emissive;

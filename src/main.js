@@ -3,6 +3,7 @@ import { FlyCamera } from './helpers/Camera.js';
 import { buildBox, buildGrid, createMesh } from './helpers/Geometry.js';
 import { loadText, createProgram } from './helpers/ShaderUtils.js';
 import { u1f, u3f, um4, um3 } from './helpers/WebGLUtils.js';
+import { createGridTexture } from './helpers/GridTexture.js';
 
 const canvas = document.getElementById('glCanvas');
 const gl = canvas.getContext('webgl2');
@@ -52,6 +53,9 @@ async function main() {
   const planeGeo = buildGrid(60, 1);
   const planeMesh = createMesh(gl, prog, planeGeo);
 
+  //texture
+  const gridTex = createGridTexture(gl, 512, 16);
+
   //setup
   gl.enable(gl.DEPTH_TEST);
   gl.clearColor(0.0, 0.01, 0.02, 1.0);  //near-black Tron background
@@ -97,13 +101,24 @@ async function main() {
       const model = M.multiply(M.translation(0, -0.01, 0), M.identity());
       um4(gl, prog, 'uModel', model);
       um3(gl, prog, 'uNormalMatrix', M.normalMatrix(model));
-      u3f(gl, prog, 'uAmbientColor',  ...DARK_GREY);
-      u3f(gl, prog, 'uDiffuseColor',  0.03, 0.06, 0.06);
-      u3f(gl, prog, 'uSpecularColor', 0.1, 0.3, 0.3);
-      u1f(gl, prog, 'uShininess', 32.0);
-      u1f(gl, prog, 'uEmissiveStrength', 0.0);
+      u3f(gl, prog, 'uAmbientColor',  0.0, 0.8, 0.7);
+      u3f(gl, prog, 'uDiffuseColor',  0.0, 0.0, 0.0);  // unused when texture on
+      u3f(gl, prog, 'uSpecularColor', 0.3, 1.0, 0.9);
+      u1f(gl, prog, 'uShininess', 64.0);
+      u1f(gl, prog, 'uEmissiveStrength', 0.08);
+
+      // bind texture
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, gridTex);
+      gl.uniform1i(gl.getUniformLocation(prog, 'uDiffuseTex'), 0);
+      gl.uniform1i(gl.getUniformLocation(prog, 'uUseTexture'), 1);
+      u1f(gl, prog, 'uTexScale', 8.0);  // tiles the grid 8x across the plane
+
       gl.bindVertexArray(planeMesh.vao);
       gl.drawElements(gl.TRIANGLES, planeMesh.count, gl.UNSIGNED_SHORT, 0);
+
+      // turn texture off for everything else
+      gl.uniform1i(gl.getUniformLocation(prog, 'uUseTexture'), 0);
     }
 
     //draw buildings
