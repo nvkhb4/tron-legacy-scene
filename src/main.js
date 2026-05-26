@@ -121,7 +121,7 @@ async function main() {
       u3f(gl, prog, 'uDiffuseColor',  0.0, 0.0, 0.0);  // unused when texture on
       u3f(gl, prog, 'uSpecularColor', 0.3, 1.0, 0.9);
       u1f(gl, prog, 'uShininess', 64.0);
-      u1f(gl, prog, 'uEmissiveStrength', 0.08);
+      u1f(gl, prog, 'uEmissiveStrength', 0.00);
 
       // bind texture
       gl.activeTexture(gl.TEXTURE0);
