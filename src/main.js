@@ -135,6 +135,10 @@ async function main() {
   const planeGeo = buildGrid(120, 1);
   const planeMesh = createMesh(gl, prog, planeGeo);
 
+  //road mesh
+  const roadGeo  = buildBox(6, 0.05, 300);
+  const roadMesh = createMesh(gl, prog, roadGeo);
+
   // Load Tron disc
   const discGeo  = await loadOBJ('../assets/obj/torn legacy disk v2-0.obj');
   const discMesh = createMeshLarge(gl, prog, discGeo);
@@ -148,6 +152,7 @@ async function main() {
 
   //load tex image
   const metalTex = await loadImageTexture(gl, '../textures/metal_plate_02_diff_4k.jpg');
+  const asphaltTex = await loadImageTexture(gl, '../textures/asphalt_track_diff_4k.jpg');
   const winTex1 = createWindowTexture(gl, 1);
   const winTex2 = createWindowTexture(gl, 2);
   const winTex3 = createWindowTexture(gl, 3);
@@ -167,8 +172,8 @@ async function main() {
   // Multiple neon point lights scattered around the city
   const LIGHTS = [
   { pos: [  0, 8,  10], color: [0.0, 1.0, 0.85] },
-  { pos: [ -8, 6,   0], color: [0.3, 0.7, 1.0]  },
-  { pos: [  8, 6, -10], color: [0.0, 1.0, 0.7]  },
+  { pos: [ -20, 6,   0], color: [0.3, 0.7, 1.0]  },
+  { pos: [  20, 6, -10], color: [0.0, 1.0, 0.7]  },
   { pos: [  0, 8, -20], color: [0.2, 0.6, 1.0]  },
   ];
 
@@ -226,7 +231,7 @@ async function main() {
   um4(gl, prog, 'uView', view);
   u3f(gl, prog, 'uCameraPos', ...camera.pos);
   u3f(gl, prog, 'uFogColor',   0.0, 0.02, 0.03);
-  u1f(gl, prog, 'uFogDensity', 0.008);
+  u1f(gl, prog, 'uFogDensity', 0.015);
   for (let i = 0; i < LIGHTS.length; i++) {
     gl.uniform3fv(gl.getUniformLocation(prog, `uLightPos[${i}]`),   LIGHTS[i].pos);
     gl.uniform3fv(gl.getUniformLocation(prog, `uLightColor[${i}]`), LIGHTS[i].color);
@@ -244,7 +249,7 @@ async function main() {
     u3f(gl, prog, 'uDiffuseColor',  0.0, 0.0, 0.0);
     u3f(gl, prog, 'uSpecularColor', 0.3, 1.0, 0.9);
     u1f(gl, prog, 'uShininess', 64.0);
-    u1f(gl, prog, 'uEmissiveStrength', 0.0);
+    u1f(gl, prog, 'uEmissiveStrength', 0.07);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, gridTex);
     gl.uniform1i(gl.getUniformLocation(prog, 'uDiffuseTex'), 0);
@@ -255,11 +260,88 @@ async function main() {
     gl.uniform1i(gl.getUniformLocation(prog, 'uUseTexture'), 0);
   }
 
+  // ── Road ──
+  {
+    const model = M.translation(0, 0.55, 0);
+    um4(gl, prog, 'uModel', model);
+    um3(gl, prog, 'uNormalMatrix', M.normalMatrix(model));
+    u3f(gl, prog, 'uAmbientColor',  0.0, 0.0, 0.0);
+    u3f(gl, prog, 'uDiffuseColor',  0.2, 0.2, 0.2);
+    u3f(gl, prog, 'uSpecularColor', 0.1, 0.1, 0.1);
+    u1f(gl, prog, 'uShininess', 16.0);
+    u1f(gl, prog, 'uEmissiveStrength', 0.0);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, asphaltTex);
+    gl.uniform1i(gl.getUniformLocation(prog, 'uDiffuseTex'), 0);
+    gl.uniform1i(gl.getUniformLocation(prog, 'uUseTexture'), 1);
+    u1f(gl, prog, 'uTexScale', 6.0);  // tile along length
+    gl.bindVertexArray(roadMesh.vao);
+    gl.drawElements(gl.TRIANGLES, roadMesh.count, gl.UNSIGNED_SHORT, 0);
+    gl.uniform1i(gl.getUniformLocation(prog, 'uUseTexture'), 0);
+  }
+
+  // Debug — big obvious box to confirm position
+  {
+    const model = M.multiply(
+      M.translation(-3, 1.5, 30),
+      M.scale(0.5, 2, 100)
+    );
+    um4(gl, prog, 'uModel', model);
+    um3(gl, prog, 'uNormalMatrix', M.normalMatrix(model));
+    gl.bindVertexArray(boxMesh.vao);
+    gl.drawElements(gl.TRIANGLES, boxMesh.count, gl.UNSIGNED_SHORT, 0);
+  }
+
+  // ── Road glowing edges ──
+  u3f(gl, prog, 'uAmbientColor',  0.0, 1.0, 0.85);
+  u3f(gl, prog, 'uDiffuseColor',  0.0, 0.3, 0.3);
+  u3f(gl, prog, 'uSpecularColor', 0.5, 1.0, 1.0);
+  u1f(gl, prog, 'uShininess', 128.0);
+  u1f(gl, prog, 'uEmissiveStrength', 0.15);
+  gl.uniform1i(gl.getUniformLocation(prog, 'uUseTexture'), 0);
+
+  // Left edge strip
+  {
+    const model = M.multiply(
+      M.translation(-8, 0.6, -15),
+      M.scale(0.15, 0.15, 100)
+    );
+    um4(gl, prog, 'uModel', model);
+    um3(gl, prog, 'uNormalMatrix', M.normalMatrix(model));
+    gl.bindVertexArray(boxMesh.vao);
+    gl.drawElements(gl.TRIANGLES, boxMesh.count, gl.UNSIGNED_SHORT, 0);
+  }
+
+  // Right edge strip
+  {
+    const model = M.multiply(
+      M.translation(3, 0.6, -15),
+      M.scale(0.15, 0.15, 100)
+    );
+    um4(gl, prog, 'uModel', model);
+    um3(gl, prog, 'uNormalMatrix', M.normalMatrix(model));
+    gl.bindVertexArray(boxMesh.vao);
+    gl.drawElements(gl.TRIANGLES, boxMesh.count, gl.UNSIGNED_SHORT, 0);
+  }
+
+  // Center dashed line — 10 dashes along the road
+  for (let i = 0; i < 10; i++) {
+    const zPos = 15 - i * 10;  // space dashes evenly
+    const model = M.multiply(
+      M.translation(0, 0.18, zPos),
+      M.scale(0.08, 0.02, 3)   // thin short dash
+    );
+    um4(gl, prog, 'uModel', model);
+    um3(gl, prog, 'uNormalMatrix', M.normalMatrix(model));
+    gl.bindVertexArray(boxMesh.vao);
+    gl.drawElements(gl.TRIANGLES, boxMesh.count, gl.UNSIGNED_SHORT, 0);
+  }
+
   // Buildings
   for (let idx = 0; idx < BUILDINGS.length; idx++) {
     const [bx, bz, bw, bh, bd] = BUILDINGS[idx];
     const model = M.multiply(
-      M.translation(bx, bh/2 - bh/2, bz),
+      M.translation(bx, 0.5, bz),
       M.scale(bw, bh, bd)
     );
     um4(gl, prog, 'uModel', model);
@@ -268,7 +350,7 @@ async function main() {
     u3f(gl, prog, 'uDiffuseColor',  0.0, 0.15, 0.15);
     u3f(gl, prog, 'uSpecularColor', 0.3, 1.0, 0.9);
     u1f(gl, prog, 'uShininess', 64.0);
-    u1f(gl, prog, 'uEmissiveStrength', 0.45);
+    u1f(gl, prog, 'uEmissiveStrength', 0.55);
 
     // Alternate between window textures per building
     const tex = winTextures[idx % winTextures.length];
@@ -348,7 +430,7 @@ async function main() {
   gl.activeTexture(gl.TEXTURE1);
   gl.bindTexture(gl.TEXTURE_2D, readFBO.tex);
   gl.uniform1i(gl.getUniformLocation(compositeProg, 'uBloom'), 1);
-  gl.uniform1f(gl.getUniformLocation(compositeProg, 'uBloomStrength'), 2.0);
+  gl.uniform1f(gl.getUniformLocation(compositeProg, 'uBloomStrength'), 2.2);
   gl.bindVertexArray(bloom.quadVAO);
   gl.drawArrays(gl.TRIANGLES, 0, 6);
 
