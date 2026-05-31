@@ -81,17 +81,32 @@ const BUILDINGS = [
 //main initialization 
 async function main() {
   //load & compile shaders
-  const [vSrc, fSrc] = await Promise.all([
+  ///const [vSrc, fSrc] = await Promise.all([
+    ///loadText('../shaders/vertex.glsl'),
+    ///loadText('../shaders/fragment.glsl')
+  //]);```
+  
+
+  const [vSrc, fSrc, skyVSrc, skyFSrc, postVSrc, brightFSrc, blurFSrc, compositeFSrc, starVSrc, starFSrc] = await Promise.all([
     loadText('../shaders/vertex.glsl'),
-    loadText('../shaders/fragment.glsl')
+    loadText('../shaders/fragment.glsl'),
+    loadText('../shaders/skybox_vertex.glsl'),
+    loadText('../shaders/skybox_fragment.glsl'),
+    loadText('../shaders/post_vertex.glsl'),
+    loadText('../shaders/bright_extract_fragment.glsl'),
+    loadText('../shaders/blur_fragment.glsl'),
+    loadText('../shaders/composite_fragment.glsl'),
+    loadText('../shaders/starfield_vertex.glsl'),
+    loadText('../shaders/starfield_fragment.glsl'),
   ]);
+  const starProg = createProgram(gl, starVSrc, starFSrc);
   const prog = createProgram(gl, vSrc, fSrc);
 
   // Skybox shader
-  const [skyVSrc, skyFSrc] = await Promise.all([
-    loadText('../shaders/skybox_vertex.glsl'),
-    loadText('../shaders/skybox_fragment.glsl')
-  ]);
+  //const [skyVSrc, skyFSrc] = await Promise.all([
+    //loadText('../shaders/skybox_vertex.glsl'),
+    //loadText('../shaders/skybox_fragment.glsl')
+  //]);```
   const skyProg = createProgram(gl, skyVSrc, skyFSrc);
 
   // Cube map
@@ -101,12 +116,12 @@ async function main() {
   testImg.onerror = () => console.error('px FAILED to load');
   testImg.src = '../textures/px.png';
 
-  const [postVSrc, brightFSrc, blurFSrc, compositeFSrc] = await Promise.all([
-  loadText('../shaders/post_vertex.glsl'),
-  loadText('../shaders/bright_extract_fragment.glsl'),
-  loadText('../shaders/blur_fragment.glsl'),
-  loadText('../shaders/composite_fragment.glsl'),
-  ]);
+  //```const [postVSrc, brightFSrc, blurFSrc, compositeFSrc] = await Promise.all([
+  //loadText('../shaders/post_vertex.glsl'),
+  //loadText('../shaders/bright_extract_fragment.glsl'),
+  //loadText('../shaders/blur_fragment.glsl'),
+  //loadText('../shaders/composite_fragment.glsl'),
+  //]);```
   const brightProg    = createProgram(gl, postVSrc, brightFSrc);
   const blurProg      = createProgram(gl, postVSrc, blurFSrc);
   const compositeProg = createProgram(gl, postVSrc, compositeFSrc);
@@ -147,11 +162,13 @@ async function main() {
   ];
 
   let last = 0;
+  let elapsed = 0;
   const posHUD = document.getElementById('pos');
 
   //render loop
   function draw(ts) {
   const dt = Math.min((ts - last) / 1000, 0.05);
+  elapsed += dt;
   last = ts;
   camera.update(dt);
 
@@ -182,6 +199,14 @@ async function main() {
   gl.drawElements(gl.TRIANGLES, skyMesh.count, gl.UNSIGNED_SHORT, 0);
   gl.enable(gl.CULL_FACE);
   gl.depthMask(true);
+
+  // Starfield — drawn after skybox, before scene
+  gl.disable(gl.DEPTH_TEST);
+  gl.useProgram(starProg);
+  gl.uniform1f(gl.getUniformLocation(starProg, 'uTime'), elapsed);
+  gl.bindVertexArray(bloom.quadVAO);
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+  gl.enable(gl.DEPTH_TEST);
 
   // Main scene
   gl.useProgram(prog);
