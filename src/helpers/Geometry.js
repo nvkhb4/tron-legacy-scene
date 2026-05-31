@@ -68,3 +68,30 @@ export function createMesh(gl, prog, geo) {
   gl.bindVertexArray(null);
   return { vao, count: geo.indices.length };
 }
+
+export function createMeshLarge(gl, prog, geo) {
+  const vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+
+  function buf(data, attrib, size) {
+    const loc = gl.getAttribLocation(prog, attrib);
+    if (loc < 0) return;
+    const b = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, b);
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0);
+  }
+
+  buf(geo.positions, 'aPosition', 3);
+  buf(geo.normals,   'aNormal',   3);
+  buf(geo.texCoords, 'aTexCoord', 2);
+
+  const ibo = gl.createBuffer();
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, geo.indices, gl.STATIC_DRAW);
+
+  gl.bindVertexArray(null);
+  // Note: UNSIGNED_INT for large meshes
+  return { vao, count: geo.indices.length, largeIndex: true };
+}

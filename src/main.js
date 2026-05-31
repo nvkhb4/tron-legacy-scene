@@ -7,6 +7,9 @@ import { createGridTexture } from './helpers/GridTexture.js';
 import { loadImageTexture } from './helpers/TextureLoader.js';
 import { loadCubeMap } from './helpers/CubeMap.js';
 import { createBloom, resizeBloom } from './helpers/Bloom.js';
+import { createWindowTexture } from './helpers/WindowTexture.js';
+import { loadOBJ } from './helpers/OBJLoader.js';
+import { createMeshLarge } from './helpers/Geometry.js';
 
 const canvas = document.getElementById('glCanvas');
 const gl = canvas.getContext('webgl2');
@@ -30,40 +33,40 @@ const DARK_GREY  = [0.05, 0.05, 0.07];
 //city buildings: (x, z, width, height, depth) 
 const BUILDINGS = [
   // ── Main corridor left (x = -10) ──
-  [-10, -25, 5, 14, 5],
-  [-10, -12, 4, 20, 4],
-  [-10,   0, 6, 12, 5],
-  [-10,  12, 5, 18, 4],
-  [-10,  24, 4,  8, 4],
+  [-5, -25, 10, 50, 5],
+  [-5, -12, 8, 70, 4],
+  [-5,   0, 9, 59, 5],
+  [-5,  12, 10, 80, 4],
+  [-5,  24, 20,  40, 4],
 
   // ── Main corridor right (x = +10) ──
-  [ 10, -25, 5, 10, 5],
-  [ 10, -12, 6, 22, 5],
-  [ 10,   0, 4,  8, 4],
-  [ 10,  12, 5, 16, 5],
-  [ 10,  24, 4, 24, 4],
+  [ 5, -25, 9, 50, 5],
+  [ 5, -12, 15, 82, 5],
+  [ 5,   0, 8,  78, 4],
+  [ 5,  12, 10, 46, 5],
+  [ 5,  24, 9, 34, 4],
 
   // ── Second corridor left (x = -22) ──
-  [-22, -20, 5, 18, 5],
-  [-22,  -8, 4, 10, 4],
-  [-22,   4, 6, 26, 5],
-  [-22,  16, 5, 14, 4],
+  [-15, -20, 5, 58, 5],
+  [-15,  -8, 4, 60, 4],
+  [-15,   4, 6, 76, 5],
+  [-15,  16, 5, 64, 4],
 
   // ── Second corridor right (x = +22) ──
-  [ 22, -18, 5, 22, 5],
-  [ 22,  -6, 4, 12, 4],
-  [ 22,   6, 6, 30, 5],
-  [ 22,  18, 5,  8, 4],
+  [ 15, -18, 5, 52, 5],
+  [ 15,  -6, 4, 62, 4],
+  [ 15,   6, 6, 70, 5],
+  [ 15,  18, 5,  28, 4],
 
   // ── Far background left (x = -35) ──
-  [-35, -15, 7, 35, 6],
-  [-35,   5, 6, 20, 6],
-  [-35,  20, 5, 28, 5],
+  [-25, -15, 7, 45, 6],
+  [-25,   5, 6, 60, 6],
+  [-25,  20, 5, 48, 5],
 
   // ── Far background right (x = +35) ──
-  [ 35, -10, 7, 40, 6],
-  [ 35,   8, 6, 18, 6],
-  [ 35,  22, 5, 32, 5],
+  [ 25, -10, 7, 40, 6],
+  [ 25,   8, 6, 18, 6],
+  [ 25,  22, 5, 32, 5],
 
   // ── Cross street — perpendicular buildings (z = -30) ──
   [ -5, -30, 4, 16, 4],
@@ -132,6 +135,10 @@ async function main() {
   const planeGeo = buildGrid(120, 1);
   const planeMesh = createMesh(gl, prog, planeGeo);
 
+  // Load Tron disc
+  const discGeo  = await loadOBJ('../assets/obj/torn legacy disk v2-0.obj');
+  const discMesh = createMeshLarge(gl, prog, discGeo);
+
   // Skybox is just a big cube drawn inside-out
   const skyGeo = buildBox(500,500, 500);
   const skyMesh = createMesh(gl, skyProg, skyGeo);
@@ -141,6 +148,10 @@ async function main() {
 
   //load tex image
   const metalTex = await loadImageTexture(gl, '../textures/metal_plate_02_diff_4k.jpg');
+  const winTex1 = createWindowTexture(gl, 1);
+  const winTex2 = createWindowTexture(gl, 2);
+  const winTex3 = createWindowTexture(gl, 3);
+  const winTextures = [winTex1, winTex2, winTex3];
 
   //setup
   gl.enable(gl.DEPTH_TEST);
@@ -164,6 +175,7 @@ async function main() {
   let last = 0;
   let elapsed = 0;
   const posHUD = document.getElementById('pos');
+
 
   //render loop
   function draw(ts) {
@@ -244,7 +256,8 @@ async function main() {
   }
 
   // Buildings
-  for (const [bx, bz, bw, bh, bd] of BUILDINGS) {
+  for (let idx = 0; idx < BUILDINGS.length; idx++) {
+    const [bx, bz, bw, bh, bd] = BUILDINGS[idx];
     const model = M.multiply(
       M.translation(bx, bh/2 - bh/2, bz),
       M.scale(bw, bh, bd)
@@ -255,15 +268,42 @@ async function main() {
     u3f(gl, prog, 'uDiffuseColor',  0.0, 0.15, 0.15);
     u3f(gl, prog, 'uSpecularColor', 0.3, 1.0, 0.9);
     u1f(gl, prog, 'uShininess', 64.0);
-    u1f(gl, prog, 'uEmissiveStrength', 0.20);
+    u1f(gl, prog, 'uEmissiveStrength', 0.45);
+
+    // Alternate between window textures per building
+    const tex = winTextures[idx % winTextures.length];
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, metalTex);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.uniform1i(gl.getUniformLocation(prog, 'uDiffuseTex'), 0);
     gl.uniform1i(gl.getUniformLocation(prog, 'uUseTexture'), 1);
-    u1f(gl, prog, 'uTexScale', 2.0);
+    u1f(gl, prog, 'uTexScale', bh / bw);  // 1x so windows don't tile weirdly (changed)
+
     gl.bindVertexArray(boxMesh.vao);
     gl.drawElements(gl.TRIANGLES, boxMesh.count, gl.UNSIGNED_SHORT, 0);
     gl.uniform1i(gl.getUniformLocation(prog, 'uUseTexture'), 0);
+  }
+
+  // Draw Tron disc — floating + rotating
+  {
+    const angle = elapsed * 0.8;  // rotation speed
+    const model = M.multiply(
+      M.translation(0, 270, -10),    // center corridor, above head height
+      M.multiply(
+        M.rotationY(angle),
+        M.scale(0.05, 0.05, 0.05) // scale down — OBJ units vary, adjust if needed
+      )
+    );
+    um4(gl, prog, 'uModel', model);
+    um3(gl, prog, 'uNormalMatrix', M.normalMatrix(model));
+    u3f(gl, prog, 'uAmbientColor',  0.0, 1.0, 0.85);
+    u3f(gl, prog, 'uDiffuseColor',  0.0, 0.5, 0.8);
+    u3f(gl, prog, 'uSpecularColor', 0.5, 1.0, 1.0);
+    u1f(gl, prog, 'uShininess', 128.0);
+    u1f(gl, prog, 'uEmissiveStrength', 0.6);
+    gl.uniform1i(gl.getUniformLocation(prog, 'uUseTexture'), 0);
+    gl.bindVertexArray(discMesh.vao);
+    // Use UNSIGNED_INT since it's a large mesh
+    gl.drawElements(gl.TRIANGLES, discMesh.count, gl.UNSIGNED_INT, 0);
   }
 
   // ── PASS 2: extract bright regions → pingFBO ──────────────────────────

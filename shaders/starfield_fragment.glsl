@@ -31,7 +31,7 @@ void main() {
   // Layer 2 — sparser brighter stars
   vec2 grid2 = floor(uv * 80.0);
   float star2 = hash(grid2 + vec2(43.2, 75.1));
-  if (star2 > 0.92) {
+  if (star2 > 0.96) {
     vec2 local = fract(uv * 80.0) - 0.5;
     float dist = length(local);
     float glow = smoothstep(0.4, 0.0, dist);
@@ -42,7 +42,7 @@ void main() {
   // Layer 3 — rare bright cyan stars (very Tron)
   vec2 grid3 = floor(uv * 30.0);
   float star3 = hash(grid3 + vec2(12.9, 91.3));
-  if (star3 > 0.95) {
+  if (star3 > 0.98) {
     vec2 local = fract(uv * 30.0) - 0.5;
     float dist = length(local);
     float glow = smoothstep(0.5, 0.0, dist);

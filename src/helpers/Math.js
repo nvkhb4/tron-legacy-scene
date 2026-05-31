@@ -58,7 +58,17 @@ const M = {
       model[4], model[5], model[6],
       model[8], model[9], model[10]
     ]);
-  }
+  },
+
+  rotationY(angle) {
+    const c = Math.cos(angle), s = Math.sin(angle);
+    return new Float32Array([
+      c, 0, s, 0,
+      0, 1, 0, 0,
+    -s, 0, c, 0,
+      0, 0, 0, 1
+    ]);
+  },
 };
 
 export default M;
