@@ -19,6 +19,10 @@ uniform sampler2D uDiffuseTex;
 uniform bool      uUseTexture;
 uniform float     uTexScale;
 
+//fog
+uniform vec3  uFogColor;
+uniform float uFogDensity;
+
 // Multiple point lights
 #define NUM_LIGHTS 4
 
@@ -53,7 +57,7 @@ void main() {
   vec3 baseAmbient = uAmbientColor;
   if (uUseTexture) {
     vec3 texColor = texture(uDiffuseTex, vTexCoord * uTexScale).rgb;
-    baseDiffuse   = texColor;
+    baseDiffuse   = texColor * vec3(0.6, 1.0, 0.9);
     baseAmbient   = texColor * 0.4;
   }
 
@@ -68,5 +72,11 @@ void main() {
   // Emissive
   result += uAmbientColor * uEmissiveStrength;
 
-  fragColor = vec4(result, 1.0);
+  // Exponential fog
+  float dist    = length(uCameraPos - vFragPos);
+  float fogFact = exp(-uFogDensity * dist);
+  fogFact       = clamp(fogFact, 0.0, 1.0);
+  vec3 finalCol = mix(uFogColor, result, fogFact);
+
+  fragColor = vec4(finalCol, 1.0);
 }
